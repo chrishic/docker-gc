@@ -37,7 +37,7 @@
 # containers were removed. To enable logging to syslog, set LOG_TO_SYSLOG=1.
 # When disabled, this script will instead log to standard out. When syslog is
 # enabled, the syslog facility and logger can be configured with
-# $SYSLOG_FACILITY and $SYSLOG_LEVEL respectively. 
+# $SYSLOG_FACILITY and $SYSLOG_LEVEL respectively.
 
 set -o nounset
 set -o errexit
@@ -75,7 +75,7 @@ fi
 EXCLUDE_CONTAINERS_FROM_GC=${EXCLUDE_CONTAINERS_FROM_GC:=/etc/docker-gc-exclude-containers}
 if [ ! -f "$EXCLUDE_CONTAINERS_FROM_GC" ]
 then
-  EXCLUDE_CONTAINERS_FROM_GC=/dev/null  
+  EXCLUDE_CONTAINERS_FROM_GC=/dev/null
 fi
 
 EXCLUDE_IDS_FILE="exclude_ids"
@@ -143,7 +143,7 @@ function compute_exclude_container_ids() {
         return
     fi
     # Find all docker images
-    # Filter out with matching names 
+    # Filter out with matching names
     # and put them to $EXCLUDE_CONTAINER_IDS_FILE
     $DOCKER ps -a \
         | grep -E "$PROCESSED_EXCLUDES" \
@@ -220,7 +220,10 @@ do
 done
 
 # List containers that we will remove and exclude ids.
-cat containers.reap.tmp | sort | uniq | grep -v -f $EXCLUDE_CONTAINER_IDS_FILE > containers.reap || true
+cat containers.reap.tmp | sort | uniq > containers.reap || true
+if [ -s "$EXCLUDE_CONTAINER_IDS_FILE" ]; then
+    cat containers.reap | grep -v -f $EXCLUDE_CONTAINER_IDS_FILE > containers.tmp && mv containers.tmp containers.reap
+fi
 
 # List containers that we will keep.
 comm -23 containers.all containers.reap > containers.keep
@@ -243,7 +246,10 @@ do
         echo $line >> images.reap.tmp
     fi
 done
-comm -23 images.reap.tmp images.used | grep -v -f $EXCLUDE_IDS_FILE > images.reap || true
+comm -23 images.reap.tmp images.used > images.reap || true
+if [ -s "$EXCLUDE_IDS_FILE" ]; then
+    cat images.reap | grep -v -f $EXCLUDE_IDS_FILE > images.tmp && mv images.tmp images.reap
+fi
 
 # Use -f flag on docker rm command; forces removal of images that are in Dead
 # status or give errors when removing.
